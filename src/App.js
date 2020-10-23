@@ -1,26 +1,52 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { Suspense, useEffect } from "react";
+import Layout from "./hoc/Layout";
+import { Redirect, Route, Switch, withRouter } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import * as userAction from "./store/action/auth";
+import HomeScreen from "./layouts/dashboard/Home";
 
-function App() {
+const Auth = React.lazy(() => {
+  return import("./layouts/auth/Authentication");
+});
+
+const Home = React.lazy(() => {
+  return import("./layouts/dashboard/Home");
+});
+
+const App = (props) => {
+  const dispatch = useDispatch();
+
+  const onTryAutoSignUp = () => dispatch(userAction.authCheckState());
+
+  const isAuth = useSelector((state) => state.auth.token !== null);
+
+  useEffect(() => {
+    onTryAutoSignUp();
+  }, [onTryAutoSignUp]);
+
+  let routes = (
+    <Switch>
+      <Route path="/auth" exact render={(props) => <Auth {...props} />} />
+      <Redirect to="/auth" />
+    </Switch>
+  );
+
+  if (isAuth) {
+    routes = (
+      <Switch>
+        <Route path="/" exact render={(props) => <Home />} />
+        <Redirect to="/" />
+      </Switch>
+    );
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <Layout>
+        <Suspense fallback={<p>Loading...</p>}>{routes}</Suspense>
+      </Layout>
     </div>
   );
-}
+};
 
-export default App;
+export default withRouter(App);
